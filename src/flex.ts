@@ -5,17 +5,25 @@ import {
 import { User, TransferHistory } from "../generated/schema"
 
 export function handleTransfer(event: TransferEvent): void {
-    let user = User.load(event.params._to.toHex())
-
-    if (!user) {
-        user = new User(event.params._to.toHex())
-        user.address = event.params._to.toHex()
-        user.createdAtTimestamp = event.block.timestamp
-    }
-
     let flexContract = FLEXContract.bind(event.address)
-    user.balance = flexContract.balanceOf(event.params._to)
-    user.save();
+
+    let userFrom = User.load(event.params._from.toHex())
+    if (!userFrom) {
+        userFrom = new User(event.params._from.toHex())
+        userFrom.address = event.params._from.toHex()
+        userFrom.createdAtTimestamp = event.block.timestamp
+    }
+    userFrom.balance = flexContract.balanceOf(event.params._from)
+    userFrom.save();
+
+    let userTo = User.load(event.params._to.toHex())
+    if (!userTo) {
+        userTo = new User(event.params._to.toHex())
+        userTo.address = event.params._to.toHex()
+        userTo.createdAtTimestamp = event.block.timestamp
+    }
+    userTo.balance = flexContract.balanceOf(event.params._to)
+    userTo.save();
 
     let transferHistory = new TransferHistory(
         event.transaction.hash.toHex() + "-" + event.logIndex.toString()
@@ -26,5 +34,4 @@ export function handleTransfer(event: TransferEvent): void {
     transferHistory.receiver = event.params._to.toHex()
     transferHistory.amount = event.params._value
     transferHistory.save()
-
 }
